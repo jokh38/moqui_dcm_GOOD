@@ -2,9 +2,9 @@
 #define MQI_IO_HPP
 
 // New modular structure
-#include <moqui/base/io/mqi_io_common.hpp>
-#include <moqui/base/io/mqi_dicom_header.hpp>
-#include <moqui/base/io/mqi_io_writers.hpp>
+#include "io/mqi_io_common.hpp"
+#include "io/mqi_dicom_header.hpp"
+#include "io/mqi_io_writers.hpp"
 
 namespace mqi
 {

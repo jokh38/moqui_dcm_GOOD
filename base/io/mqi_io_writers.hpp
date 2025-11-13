@@ -3,9 +3,9 @@
 
 #include "mqi_io_common.hpp"
 #include "mqi_dicom_header.hpp"
-#include <moqui/base/mqi_scorer.hpp>
-#include <moqui/base/mqi_sparse_io.hpp>
-#include <moqui/base/mqi_node.hpp>
+#include "../mqi_scorer.hpp"
+#include "../mqi_sparse_io.hpp"
+#include "../mqi_node.hpp"
 #include <valarray>
 #include <zlib.h>
 
