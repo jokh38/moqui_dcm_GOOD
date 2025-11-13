@@ -51,9 +51,13 @@ tests/
 
 ## 코드 크기 비교
 
-| 구분 | 원본 | 리팩토링 후 | 감소율 |
+| 구분 | 원본 | 리팩토링 후 | 변화 |
 |------|------|------------|--------|
-| **I/O 모듈** | 1,176줄 | ~500줄 | **57% 감소** |
+| **I/O 모듈 (헤더만)** | 1,176줄 | 135줄 (wrapper) | **88% 감소** |
+| **I/O 모듈 (전체)** | 1,176줄 | 1,130줄 (4개 파일) | 4% 감소 |
+| **mqi_dicom_header.hpp** | - | 54줄 | 새로 분리 |
+| **mqi_io_common.hpp** | - | 180줄 | 새로 분리 |
+| **mqi_io_writers.hpp** | - | 761줄 | 새로 분리 |
 | **타입 정의** | 100줄 (포함) | 130줄 (분리) | 명확성 증가 |
 | **테스트** | 0줄 | ~200줄 | 품질 보증 추가 |
 
@@ -159,25 +163,28 @@ MetaImageWriter<float>::save_mhd(geometry, data, scale, path, filename, length);
 DicomWriter<float>::save_from_scorer(scorer, geometry, header, scale, path, filename, dim);
 ```
 
-## 다음 단계
+## 완료된 작업
 
-### 남은 작업
+### I/O 모듈 리팩토링 (✅ 완료)
 1. ✅ 테스트 프레임워크 설정
 2. ✅ mqi_dicom_header.hpp 분리
 3. ✅ mqi_io_common.hpp 작성
 4. ✅ mqi_tps_types.hpp 분리
-5. ✅ mqi_io_writers.hpp 작성
-6. ✅ mqi_io.hpp 리팩토링
-7. ⏳ mqi_dicom_loader.hpp 분리 (선택)
-8. ⏳ mqi_geometry_utils.hpp 분리 (선택)
-9. ⏳ mqi_tps_env.hpp 간소화 (선택)
+5. ✅ mqi_io_writers.hpp 작성 (DicomWriter 포함)
+6. ✅ mqi_io.hpp 리팩토링 및 교체 완료
+7. ✅ 전체 테스트 통과 (12/12 tests)
 
-### 통합 계획
-1. 원본 파일 백업 완료 (`mqi_io.hpp.backup`)
-2. 새 구조 테스트 및 검증
-3. 단계적 마이그레이션
-4. 전체 빌드 테스트
-5. 커밋 및 푸시
+### 통합 완료
+1. ✅ 원본 파일 백업 완료 (`mqi_io.hpp.backup`)
+2. ✅ 새 구조 테스트 및 검증 (12 tests, 100% pass)
+3. ✅ 원본 파일 교체 완료
+4. ✅ DicomWriter 완전 구현 (500+ lines)
+5. ✅ 하위 호환성 100% 유지
+
+### 향후 작업 (선택사항)
+1. ⏳ mqi_dicom_loader.hpp 분리
+2. ⏳ mqi_geometry_utils.hpp 분리
+3. ⏳ mqi_tps_env.hpp 간소화
 
 ## 파일 트리
 ```
@@ -200,12 +207,13 @@ moqui_dcm_GOOD/
 ```
 
 ## 결론
-- ✅ TDD 방식 적용 성공
-- ✅ 코드 중복 대폭 감소
-- ✅ 가독성 및 유지보수성 향상
-- ✅ 하위 호환성 유지
-- ✅ 테스트 커버리지 확보
-- ⏳ 원본 파일 대체 준비 완료
+- ✅ TDD 방식 적용 성공 (12 tests, 100% pass)
+- ✅ 코드 중복 대폭 감소 (공통 유틸리티 추출)
+- ✅ 가독성 및 유지보수성 향상 (1개 파일 → 4개 모듈)
+- ✅ 하위 호환성 100% 유지 (기존 API 그대로 사용 가능)
+- ✅ 테스트 커버리지 확보 (전체 유틸리티 함수 검증)
+- ✅ 원본 파일 교체 완료 (`mqi_io.hpp` → 리팩토링 버전)
+- ✅ DicomWriter 완전 구현 (DICOM RT Dose 포맷 지원)
 
 ## Git 커밋 메시지 (제안)
 ```
