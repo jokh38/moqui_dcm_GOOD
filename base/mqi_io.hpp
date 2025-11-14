@@ -85,10 +85,8 @@ void save_to_npz(const mqi::scorer<R>* src,
                 uint32_t              num_spots,
                 R*                    time_scale,
                 R                     threshold) {
-    // This version with time_scale and threshold needs custom implementation
-    // For now, delegate to the simpler version
-    // TODO: Implement threshold version in NpzWriter
-    NpzWriter<R>::save_scorer(src, scale, filepath, filename, dim, num_spots);
+    NpzWriter<R>::save_scorer_with_threshold(src, scale, filepath, filename,
+                                             dim, num_spots, time_scale, threshold);
 }
 
 /// Save to MHD format (backward compatible)
@@ -124,6 +122,14 @@ void save_to_dcm(const mqi::scorer<R>*        src,
                 const uint32_t               length,
                 const mqi::vec3<mqi::ijk_t>& dim,
                 const bool                   is_2cm_mode = false) {
+    // Verify that length parameter matches dimensions
+    const uint32_t expected_length = static_cast<uint32_t>(dim.x) * dim.y * dim.z;
+    if (length != expected_length) {
+        std::cerr << "Warning: save_to_dcm length mismatch - provided: " << length
+                  << ", expected: " << expected_length << " (dim: "
+                  << dim.x << "x" << dim.y << "x" << dim.z << ")" << std::endl;
+    }
+
     DicomWriter<R>::save_from_scorer(src, geometry_node, header_info, scale,
                                      filepath, filename, dim, is_2cm_mode);
 }

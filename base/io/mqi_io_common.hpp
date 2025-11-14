@@ -8,7 +8,6 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <random>
 
 namespace mqi
 {
@@ -62,21 +61,9 @@ inline std::string get_current_time() {
     return std::string(buf);
 }
 
-/// Generate unique UID (simple implementation for testing)
-/// Format: 1.2.826.0.1.3680043.X.Y.Z where X, Y, Z are random numbers
-inline std::string generate_uid() {
-    static std::random_device rd;
-    static std::mt19937_64 gen(rd());
-    static std::uniform_int_distribution<uint64_t> dis;
-
-    std::ostringstream oss;
-    oss << "1.2.826.0.1.3680043."
-        << dis(gen) << "."
-        << dis(gen) << "."
-        << dis(gen);
-
-    return oss.str();
-}
+// Note: UID generation is handled by GDCM library (gdcm::UIDGenerator)
+// for DICOM files to ensure compliance with DICOM standards.
+// No custom UID generation is needed in this common utilities file.
 
 /// Build file path from directory, filename, and extension
 inline std::string build_file_path(const std::string& dir,

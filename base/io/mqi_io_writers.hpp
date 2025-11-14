@@ -144,6 +144,80 @@ public:
         delete[] value_vec;
         delete[] vox_vec;
     }
+
+    // Save with threshold and time scaling
+    static void save_scorer_with_threshold(const mqi::scorer<R>* src,
+                                           const R               scale,
+                                           const std::string&    filepath,
+                                           const std::string&    filename,
+                                           mqi::vec3<mqi::ijk_t> dim,
+                                           uint32_t              num_spots,
+                                           R*                    time_scale,
+                                           R                     threshold) {
+        uint32_t vol_size = dim.x * dim.y * dim.z;
+
+        // Extract sparse data organized by spots with threshold and time scaling
+        std::vector<double>* value_vec = new std::vector<double>[num_spots];
+        std::vector<mqi::key_t>* vox_vec = new std::vector<mqi::key_t>[num_spots];
+
+        for (int ind = 0; ind < src->max_capacity_; ind++) {
+            if (src->data_[ind].key1 != mqi::empty_pair &&
+                src->data_[ind].key2 != mqi::empty_pair) {
+                mqi::key_t vox_ind = src->data_[ind].key1;
+                mqi::key_t spot_ind = src->data_[ind].key2;
+
+                if (vox_ind >= 0 && vox_ind < vol_size) {
+                    // Apply scaling, threshold correction, and time scaling
+                    double value = src->data_[ind].value;
+                    value *= scale;
+                    value -= 2 * threshold;
+                    if (value < 0) value = 0;
+                    value /= time_scale[spot_ind];
+
+                    value_vec[spot_ind].push_back(value);
+                    vox_vec[spot_ind].push_back(vox_ind);
+                }
+            }
+        }
+
+        // Build CSR format
+        std::vector<double> data_vec;
+        std::vector<uint32_t> indices_vec, indptr_vec;
+        uint32_t vox_count = 0;
+        indptr_vec.push_back(vox_count);
+
+        for (uint32_t ii = 0; ii < num_spots; ii++) {
+            data_vec.insert(data_vec.end(), value_vec[ii].begin(), value_vec[ii].end());
+            indices_vec.insert(indices_vec.end(), vox_vec[ii].begin(), vox_vec[ii].end());
+            vox_count += vox_vec[ii].size();
+            indptr_vec.push_back(vox_count);
+        }
+
+        // Convert to arrays
+        uint32_t* indices = new uint32_t[indices_vec.size()];
+        uint32_t* indptr = new uint32_t[indptr_vec.size()];
+        double* data = new double[data_vec.size()];
+        std::copy(indices_vec.begin(), indices_vec.end(), indices);
+        std::copy(indptr_vec.begin(), indptr_vec.end(), indptr);
+        std::copy(data_vec.begin(), data_vec.end(), data);
+
+        // Save using mqi::io::save_npz
+        uint32_t shape[2] = { num_spots, vol_size };
+        std::string format = "csr";
+        std::string npz_path = filepath + "/" + filename + ".npz";
+
+        mqi::io::save_npz(npz_path, "indices.npy", indices, indices_vec.size(), "w");
+        mqi::io::save_npz(npz_path, "indptr.npy", indptr, indptr_vec.size(), "a");
+        mqi::io::save_npz(npz_path, "shape.npy", shape, 2, "a");
+        mqi::io::save_npz(npz_path, "data.npy", data, data_vec.size(), "a");
+        mqi::io::save_npz(npz_path, "format.npy", format, 3, "a");
+
+        delete[] indices;
+        delete[] indptr;
+        delete[] data;
+        delete[] value_vec;
+        delete[] vox_vec;
+    }
 };
 
 // ============================================================================
@@ -160,12 +234,12 @@ public:
                         const std::string&    filename,
                         const uint32_t        length) {
         // Extract geometry information
-        float dx = geometry->geo[0].get_x_edges()[1] - geometry->geo[0].get_x_edges()[0];
-        float dy = geometry->geo[0].get_y_edges()[1] - geometry->geo[0].get_y_edges()[0];
-        float dz = geometry->geo[0].get_z_edges()[1] - geometry->geo[0].get_z_edges()[0];
-        float x0 = geometry->geo[0].get_x_edges()[0];
-        float y0 = geometry->geo[0].get_y_edges()[0];
-        float z0 = geometry->geo[0].get_z_edges()[0];
+        float dx = geometry->geo->get_x_edges()[1] - geometry->geo->get_x_edges()[0];
+        float dy = geometry->geo->get_y_edges()[1] - geometry->geo->get_y_edges()[0];
+        float dz = geometry->geo->get_z_edges()[1] - geometry->geo->get_z_edges()[0];
+        float x0 = geometry->geo->get_x_edges()[0];
+        float y0 = geometry->geo->get_y_edges()[0];
+        float z0 = geometry->geo->get_z_edges()[0];
 
         // Write header
         std::ofstream fid_header(build_file_path(filepath, filename, "mhd"));
@@ -178,9 +252,9 @@ public:
                    << "Offset = " << x0 << " " << y0 << " " << z0 << "\n"
                    << "CenterOfRotation = 0 0 0\n"
                    << "AnatomicOrientation = RAI\n"
-                   << "DimSize = " << geometry->geo[0].get_nxyz().x << " "
-                   << geometry->geo[0].get_nxyz().y << " "
-                   << geometry->geo[0].get_nxyz().z << "\n"
+                   << "DimSize = " << geometry->geo->get_nxyz().x << " "
+                   << geometry->geo->get_nxyz().y << " "
+                   << geometry->geo->get_nxyz().z << "\n"
                    << "ElementType = MET_DOUBLE\n"
                    << "ElementSpacing = " << dx << " " << dy << " " << dz << "\n"
                    << "ElementDataFile = " << filename << ".raw\n";
@@ -200,12 +274,12 @@ public:
                         const std::string&    filename,
                         const uint32_t        length) {
         // Extract geometry
-        float dx = geometry->geo[0].get_x_edges()[1] - geometry->geo[0].get_x_edges()[0];
-        float dy = geometry->geo[0].get_y_edges()[1] - geometry->geo[0].get_y_edges()[0];
-        float dz = geometry->geo[0].get_z_edges()[1] - geometry->geo[0].get_z_edges()[0];
-        float x0 = geometry->geo[0].get_x_edges()[0] + dx * 0.5;
-        float y0 = geometry->geo[0].get_y_edges()[0] + dy * 0.5;
-        float z0 = geometry->geo[0].get_z_edges()[0] + dz * 0.5;
+        float dx = geometry->geo->get_x_edges()[1] - geometry->geo->get_x_edges()[0];
+        float dy = geometry->geo->get_y_edges()[1] - geometry->geo->get_y_edges()[0];
+        float dz = geometry->geo->get_z_edges()[1] - geometry->geo->get_z_edges()[0];
+        float x0 = geometry->geo->get_x_edges()[0] + dx * 0.5;
+        float y0 = geometry->geo->get_y_edges()[0] + dy * 0.5;
+        float z0 = geometry->geo->get_z_edges()[0] + dz * 0.5;
 
         std::valarray<double> dest(data, length);
         dest *= scale;
@@ -221,9 +295,9 @@ public:
             << "Origin = " << std::setprecision(9) << x0 << " " << y0 << " " << z0 << "\n"
             << "CenterOfRotation = 0 0 0\n"
             << "AnatomicOrientation = RAI\n"
-            << "DimSize = " << geometry->geo[0].get_nxyz().x << " "
-            << geometry->geo[0].get_nxyz().y << " "
-            << geometry->geo[0].get_nxyz().z << "\n"
+            << "DimSize = " << geometry->geo->get_nxyz().x << " "
+            << geometry->geo->get_nxyz().y << " "
+            << geometry->geo->get_nxyz().z << "\n"
             << "ElementType = MET_DOUBLE\n"
             << "HeaderSize = -1\n"
             << "ElementSpacing = " << std::setprecision(9) << dx << " " << dy << " " << dz << "\n"
