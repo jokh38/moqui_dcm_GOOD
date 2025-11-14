@@ -1,0 +1,26 @@
+# Compiled test binaries
+tests/test_grid3d
+tests/test_treatment_machine
+tests/test_*
+!tests/test_*.cpp
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Symlinks for include paths
+moqui
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
