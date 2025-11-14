@@ -116,7 +116,10 @@ download_node(mqi::node_t<R>* c_node, mqi::node_t<R>*& g_node) {
             printf("\tnode's child[%d]: %p\n", i, children[i]);
             download_node<R>(c_node->children[i], children[i]);
         }
-        //        delete[] children;
+        // Clean up temporary CPU array holding GPU pointers
+        delete[] children;
+        // Note: GPU memory cleanup (cudaFree) is intentionally not performed here
+        // as the GPU node structure may still be in use elsewhere
         //        gpu_err_chk(cudaFree(tmp.children));
     }
     //    gpu_err_chk(cudaFree(g_node));
