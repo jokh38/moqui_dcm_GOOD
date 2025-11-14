@@ -116,8 +116,8 @@ download_node(mqi::node_t<R>* c_node, mqi::node_t<R>*& g_node) {
             printf("\tnode's child[%d]: %p\n", i, children[i]);
             download_node<R>(c_node->children[i], children[i]);
         }
-        //        delete[] children;
-        //        gpu_err_chk(cudaFree(tmp.children));
+        delete[] children;
+        //gpu_err_chk(cudaFree(tmp.children));
     }
     //    gpu_err_chk(cudaFree(g_node));
 }

@@ -443,18 +443,18 @@ public:
     print_reshaped_results() {
         auto start = std::chrono::high_resolution_clock::now();
 
-        uint32_t         vol_size;
-        mqi::vec3<ijk_t> dim;
-        R*               reshaped_data;
+        uint32_t            vol_size;
+        mqi::vec3<ijk_t>    dim;
+        std::vector<double> reshaped_data;
         for (int c_ind = 0; c_ind < this->world->n_children; c_ind++) {
             for (int s_ind = 0; s_ind < this->world->children[c_ind]->n_scorers; s_ind++) {
-                dim           = this->world->children[c_ind]->geo->get_nxyz();
-                vol_size      = dim.x * dim.y * dim.z;
-                reshaped_data = this->reshape_data(c_ind, s_ind, dim);
+                dim      = this->world->children[c_ind]->geo->get_nxyz();
+                vol_size = dim.x * dim.y * dim.z;
+                reshaped_data =
+                  this->reshape_data(c_ind, s_ind, dim);
                 for (int v_ind = 0; v_ind < vol_size; v_ind++) {
                     printf("%d %f\n", v_ind, reshaped_data[v_ind]);
                 }
-                delete[] reshaped_data;
             }
         }
         auto                                      stop = std::chrono::high_resolution_clock::now();
