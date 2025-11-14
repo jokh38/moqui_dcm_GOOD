@@ -46,6 +46,9 @@ protected:
     R* ye_ = nullptr;   ///< y_min, ..., y_max
     R* ze_ = nullptr;   ///< z_min, ..., z_max
 
+    ///< Ownership flags: true if grid owns the edge arrays and should delete them
+    bool owns_edges_ = false;
+
     /// Two edge position of bounding box
     mqi::vec3<R> V000_;   ///< coner x_min, y_min, z_min
     mqi::vec3<R> V111_;   ///< coner x_max, y_max, z_max
@@ -113,6 +116,7 @@ public:
         xe_ = new R[n_xe];
         ye_ = new R[n_ye];
         ze_ = new R[n_ze];
+        owns_edges_ = true;  // We allocated these arrays, so we own them
 
         for (ijk_t i = 0; i < n_xe; ++i)
             xe_[i] = xe[i];
@@ -144,6 +148,7 @@ public:
         xe_ = new R[n_xe];
         ye_ = new R[n_ye];
         ze_ = new R[n_ze];
+        owns_edges_ = true;  // We allocated these arrays, so we own them
 
         dim_.x = n_xe - 1;
         dim_.y = n_ye - 1;
@@ -182,6 +187,7 @@ public:
         xe_ = new R[n_xe];
         ye_ = new R[n_ye];
         ze_ = new R[n_ze];
+        owns_edges_ = true;  // We allocated these arrays, so we own them
 
         dim_.x = n_xe - 1;
         dim_.y = n_ye - 1;
@@ -227,6 +233,7 @@ public:
         xe_ = new R[n_xe];
         ye_ = new R[n_ye];
         ze_ = new R[n_ze];
+        owns_edges_ = true;  // We allocated these arrays, so we own them
 
         dim_.x = n_xe - 1;
         dim_.y = n_ye - 1;
@@ -264,6 +271,7 @@ public:
         xe_ = new R[n_xe];
         ye_ = new R[n_ye];
         ze_ = new R[n_ze];
+        owns_edges_ = true;  // We allocated these arrays, so we own them
 
         for (ijk_t i = 0; i < n_xe; ++i)
             xe_[i] = xe[i];
@@ -296,6 +304,7 @@ public:
         xe_ = new R[n_xe];
         ye_ = new R[n_ye];
         ze_ = new R[n_ze];
+        owns_edges_ = true;  // We allocated these arrays, so we own them
 
         for (ijk_t i = 0; i < n_xe; ++i)
             xe_[i] = xe[i];
@@ -318,16 +327,35 @@ public:
 
     ///< Destructor releases dynamic allocation for x/y/z coordinates
     CUDA_HOST_DEVICE
-    ~grid3d() {}
+    ~grid3d() {
+        // Only delete arrays if we own them (allocated in constructor)
+        // If set_edges() was used, we don't own them and shouldn't delete
+        if (owns_edges_) {
+            if (xe_ != nullptr) delete[] xe_;
+            if (ye_ != nullptr) delete[] ye_;
+            if (ze_ != nullptr) delete[] ze_;
+        }
+        // Note: data_ is handled separately by delete_data_if_used()
+    }
 
     /// set edge pointer
     /// \return pointer of data
+    /// NOTE: This method borrows external pointers - grid does not own them
     CUDA_HOST_DEVICE
     virtual void
     set_edges(R* xe, ijk_t nx, R* ye, ijk_t ny, R* ze, ijk_t nz) {
+        // If we previously owned edges, delete them before reassigning
+        if (owns_edges_) {
+            if (xe_ != nullptr) delete[] xe_;
+            if (ye_ != nullptr) delete[] ye_;
+            if (ze_ != nullptr) delete[] ze_;
+        }
+
         xe_    = xe;
         ye_    = ye;
         ze_    = ze;
+        owns_edges_ = false;  // We're borrowing these pointers, don't delete them
+
         dim_.x = nx - 1;
         dim_.y = ny - 1;
         dim_.z = nz - 1;
