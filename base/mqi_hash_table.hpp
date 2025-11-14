@@ -1,6 +1,7 @@
 #ifndef MQI_HASH_TABLE_CLASS_HPP
 #define MQI_HASH_TABLE_CLASS_HPP
 
+#include <cstdio>
 #include <cstring>
 #include <moqui/base/mqi_common.hpp>
 
@@ -16,7 +17,7 @@ struct key_value {
 void
 init_table(key_value* table, uint32_t max_capacity) {
     //// Multithreading?
-    for (int i = 0; i < max_capacity; i++) {
+    for (uint32_t i = 0; i < max_capacity; i++) {
         table[i].key1  = mqi::empty_pair;
         table[i].key2  = mqi::empty_pair;
         table[i].value = 0;
@@ -28,7 +29,7 @@ CUDA_GLOBAL void
 init_table_cuda(key_value* table, uint32_t max_capacity) {
 
     //// Multithreading?
-    for (int i = 0; i < max_capacity; i++) {
+    for (uint32_t i = 0; i < max_capacity; i++) {
         table[i].value = 0;
     }
     //#endif
@@ -38,7 +39,7 @@ template<typename R>
 CUDA_GLOBAL void
 test_print(mqi::key_value* data) {
     uint32_t ind = 512 * 512 * 200 * 4 - 1;
-    printf("data[0].key1 %d data[0].key2 %d data[0].value %d\n",
+    printf("data[0].key1 %u data[0].key2 %u data[0].value %f\n",
            data[ind].key1,
            data[ind].key2,
            data[ind].value);

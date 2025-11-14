@@ -3,6 +3,7 @@
 
 #include <moqui/base/mqi_common.hpp>
 #include <moqui/base/mqi_math.hpp>
+#include <moqui/base/mqi_physics_constants.hpp>
 
 namespace mqi
 {
@@ -24,8 +25,9 @@ public:
     CUDA_HOST_DEVICE
     relativistic_quantities(R kinetic_energy, R rest_mass_MeV) :
         Ek(kinetic_energy), mc2(rest_mass_MeV) {
-        const R Mp      = 938.272046;   // Mp/eV = proton mass in eV
-        const R Me      = 0.510998928;
+        const physics_constants<R> phys_const;
+        const R Mp      = phys_const.Mp;
+        const R Me      = phys_const.Me;
         Et              = Ek + Mp;
         Et_sq           = Et * Et;
         const R MeMp    = Me / Mp;       // Me/Mp

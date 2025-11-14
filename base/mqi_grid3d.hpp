@@ -512,18 +512,18 @@ public:
         vox2.x = xe_[idx.x + 1];
         vox2.y = ye_[idx.y + 1];
         vox2.z = ze_[idx.z + 1];
-        assert((vox1.x < p.x || fabsf(vox1.x - p.x) < 1e-3) &&
-               (p.x < vox2.x || fabsf(vox2.x - p.x) < 1e-3));
-        assert((vox1.y < p.y || fabsf(vox1.y - p.y) < 1e-3) &&
-               (p.y < vox2.y || fabsf(vox2.y - p.y) < 1e-3));
-        if ((vox1.z < p.z || fabsf(vox1.z - p.z) < 1e-3) &&
-            (p.z < vox2.z || fabsf(vox2.z - p.z) < 1e-3)) {
+        assert((vox1.x < p.x || mqi::mqi_abs(vox1.x - p.x) < 1e-3) &&
+               (p.x < vox2.x || mqi::mqi_abs(vox2.x - p.x) < 1e-3));
+        assert((vox1.y < p.y || mqi::mqi_abs(vox1.y - p.y) < 1e-3) &&
+               (p.y < vox2.y || mqi::mqi_abs(vox2.y - p.y) < 1e-3));
+        if ((vox1.z < p.z || mqi::mqi_abs(vox1.z - p.z) < 1e-3) &&
+            (p.z < vox2.z || mqi::mqi_abs(vox2.z - p.z) < 1e-3)) {
 
         } else {
             printf("vtx1.z %f p.x %f vox1.z %f d.z %f\n", vox1.z, p.z, vox2.z, d.z);
         }
-        assert((vox1.z < p.z || fabsf(vox1.z - p.z) < 1e-3) &&
-               (p.z < vox2.z || fabsf(vox2.z - p.z) < 1e-3));
+        assert((vox1.z < p.z || mqi::mqi_abs(vox1.z - p.z) < 1e-3) &&
+               (p.z < vox2.z || mqi::mqi_abs(vox2.z - p.z) < 1e-3));
 
         ///< check X (1st axis)
         R me = d.dot(n100_);
@@ -748,7 +748,7 @@ public:
     {   //find index for the first intersection, return voxel index
         mqi::vec3<ijk_t> idx;
         R                min_x = 100.0, min_y = 100.0, min_z = 100.0;
-        for (int ind = 0; ind < dim_.x; ind++) {
+        for (ijk_t ind = 0; ind < dim_.x; ind++) {
             if (mqi::mqi_abs(xe_[ind] - p.x) < mqi::geometry_tolerance) {
                 if (dir.x > 0) {
                     idx.x = ind;
@@ -779,7 +779,7 @@ public:
             }
         }
 
-        for (int ind = 0; ind < dim_.y; ind++) {
+        for (ijk_t ind = 0; ind < dim_.y; ind++) {
             if (mqi::mqi_abs(ye_[ind] - p.y) < mqi::geometry_tolerance) {
                 if (dir.y > 0) {
                     idx.y = ind;
@@ -810,7 +810,7 @@ public:
             }
         }
 
-        for (int ind = 0; ind < dim_.z; ind++) {
+        for (ijk_t ind = 0; ind < dim_.z; ind++) {
             if (mqi::mqi_abs(ze_[ind] - p.z) < mqi::geometry_tolerance) {
                 if (dir.z > 0) {
                     idx.z = ind;
