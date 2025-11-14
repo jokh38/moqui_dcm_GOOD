@@ -4,6 +4,7 @@
 #include <chrono>
 #include <strings.h>
 #include <sys/stat.h>
+#include <vector>
 
 #include <moqui/base/mqi_common.hpp>
 #include <moqui/base/mqi_node.hpp>
@@ -63,7 +64,30 @@ public:
 
     CUDA_HOST
     ~x_environment() {
-        ;
+        // Clean up CPU-allocated arrays
+        if (materials != nullptr) {
+            delete[] materials;
+            materials = nullptr;
+        }
+
+        if (vertices != nullptr) {
+            delete[] vertices;
+            vertices = nullptr;
+        }
+
+        // Clean up world node structure
+        // Note: world is a complex tree structure with children, scorers, and geometry
+        // A full recursive cleanup would be ideal but requires careful handling
+        // to avoid double-free issues with shared resources
+        if (world != nullptr) {
+            // Basic cleanup - derived classes may need to implement more thorough cleanup
+            delete world;
+            world = nullptr;
+        }
+
+        // Note: d_world, d_materials, d_vertices are never used in practice
+        // (always nullptr). GPU memory is managed via global variables
+        // like mc::mc_world which is freed in finalize() method.
     }
 
     ///< user defined methods
@@ -159,13 +183,10 @@ public:
     ///<virtual void update() =  0;
 
     CUDA_HOST
-    double*
+    std::vector<double>
     reshape_data(int c_ind, int s_ind, mqi::vec3<ijk_t> dim) {
-        double* reshaped_data = new double[dim.x * dim.y * dim.z];
-        int ind_x = 0, ind_y = 0, ind_z = 0, lin = 0;
-        for (int i = 0; i < dim.x * dim.y * dim.z; i++) {
-            reshaped_data[i] = 0;
-        }
+        // Use vector for automatic memory management
+        std::vector<double> reshaped_data(dim.x * dim.y * dim.z, 0.0);
         //printf("max capacity %d\n", this->world->children[c_ind]->scorers[s_ind]->max_capacity_);
         for (int ind = 0; ind < this->world->children[c_ind]->scorers[s_ind]->max_capacity_;
              ind++) {
@@ -184,7 +205,6 @@ public:
         //auto             start = std::chrono::high_resolution_clock::now();
         uint32_t         vol_size;
         mqi::vec3<ijk_t> dim;
-        double*          reshaped_data;
         std::string      filename;
         for (int c_ind = 0; c_ind < this->world->n_children; c_ind++) {
             for (int s_ind = 0; s_ind < this->world->children[c_ind]->n_scorers; s_ind++) {
@@ -192,27 +212,26 @@ public:
                   std::to_string(c_ind) + "_" + this->world->children[c_ind]->scorers[s_ind]->name_;
                 dim           = this->world->children[c_ind]->geo->get_nxyz();
                 vol_size      = dim.x * dim.y * dim.z;
-                reshaped_data = this->reshape_data(c_ind, s_ind, dim);
+                std::vector<double> reshaped_data = this->reshape_data(c_ind, s_ind, dim);
                 if (!this->output_format.compare("mhd")) {
                     mqi::io::save_to_mhd<R>(this->world->children[c_ind],
-                                            reshaped_data,
+                                            reshaped_data.data(),
                                             1.0,
                                             this->output_path,
                                             filename,
                                             vol_size);
                 } else if (!this->output_format.compare("mha")) {
                     mqi::io::save_to_mha<R>(this->world->children[c_ind],
-                                            reshaped_data,
+                                            reshaped_data.data(),
                                             1.0,
                                             this->output_path,
                                             filename,
                                             vol_size);
                 } else {
                     mqi::io::save_to_bin<double>(
-                      reshaped_data, 1.0, this->output_path, filename, vol_size);
+                      reshaped_data.data(), 1.0, this->output_path, filename, vol_size);
                 }
-
-                delete[] reshaped_data;
+                // No manual delete needed - vector handles memory automatically
             }
         }
         //auto                                      stop = std::chrono::high_resolution_clock::now();
