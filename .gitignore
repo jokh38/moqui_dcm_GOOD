@@ -1,0 +1,26 @@
+# Precompiled headers
+*.gch
+
+# Symlink for include paths
+moqui
+
+# Test binaries
+tests/test_*
+*.o
+*.a
+
+# Build artifacts
+*.so
+*.dylib
+*.dll
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
