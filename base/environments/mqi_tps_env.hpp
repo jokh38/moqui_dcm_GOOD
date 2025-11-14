@@ -1781,7 +1781,6 @@ public:
     CUDA_HOST
     std::vector<double>
     reshape_data(int c_ind, int s_ind, mqi::vec3<ijk_t> dim) {
-        // Use vector for automatic memory management
         std::vector<double> reshaped_data(dim.x * dim.y * dim.z, 0.0);
         //printf("max capacity %d\n", this->world->children[c_ind]->scorers[s_ind]->max_capacity_);
         for (int ind = 0; ind < this->world->children[c_ind]->scorers[s_ind]->max_capacity_;
@@ -1800,6 +1799,7 @@ public:
     save_reshaped_files() {
         uint32_t                 vol_size;
         mqi::vec3<ijk_t>         dim;
+        std::vector<double>      reshaped_data;
         std::string              filename;
         std::vector<std::string> beam_names = this->tx->get_beam_names();
         std::string              beam_name  = beam_names[bnb - 1];
@@ -1809,7 +1809,7 @@ public:
                            this->world->children[c_ind]->scorers[s_ind]->name_;
                 dim           = this->world->children[c_ind]->geo->get_nxyz();
                 vol_size      = dim.x * dim.y * dim.z;
-                std::vector<double> reshaped_data = this->reshape_data(c_ind, s_ind, dim);
+                reshaped_data = this->reshape_data(c_ind, s_ind, dim);
                 if (!this->output_format.compare("mhd")) {
                     mqi::io::save_to_mhd<R>(this->world->children[c_ind],
                                             reshaped_data.data(),
@@ -1864,7 +1864,6 @@ public:
                                                  filename,
                                                  vol_size);
                 }
-                // No manual delete needed - vector handles memory automatically
             }
         }
     }
