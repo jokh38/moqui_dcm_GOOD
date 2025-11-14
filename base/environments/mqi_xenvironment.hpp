@@ -63,31 +63,19 @@ public:
     }
 
     CUDA_HOST
-    ~x_environment() {
-        // Clean up CPU-allocated arrays
-        if (materials != nullptr) {
+    virtual ~x_environment() {
+        if (materials) {
             delete[] materials;
             materials = nullptr;
         }
-
-        if (vertices != nullptr) {
+        if (vertices) {
             delete[] vertices;
             vertices = nullptr;
         }
-
-        // Clean up world node structure
-        // Note: world is a complex tree structure with children, scorers, and geometry
-        // A full recursive cleanup would be ideal but requires careful handling
-        // to avoid double-free issues with shared resources
-        if (world != nullptr) {
-            // Basic cleanup - derived classes may need to implement more thorough cleanup
+        if (world) {
             delete world;
             world = nullptr;
         }
-
-        // Note: d_world, d_materials, d_vertices are never used in practice
-        // (always nullptr). GPU memory is managed via global variables
-        // like mc::mc_world which is freed in finalize() method.
     }
 
     ///< user defined methods
@@ -185,7 +173,6 @@ public:
     CUDA_HOST
     std::vector<double>
     reshape_data(int c_ind, int s_ind, mqi::vec3<ijk_t> dim) {
-        // Use vector for automatic memory management
         std::vector<double> reshaped_data(dim.x * dim.y * dim.z, 0.0);
         //printf("max capacity %d\n", this->world->children[c_ind]->scorers[s_ind]->max_capacity_);
         for (int ind = 0; ind < this->world->children[c_ind]->scorers[s_ind]->max_capacity_;
@@ -205,6 +192,7 @@ public:
         //auto             start = std::chrono::high_resolution_clock::now();
         uint32_t         vol_size;
         mqi::vec3<ijk_t> dim;
+        std::vector<double> reshaped_data;
         std::string      filename;
         for (int c_ind = 0; c_ind < this->world->n_children; c_ind++) {
             for (int s_ind = 0; s_ind < this->world->children[c_ind]->n_scorers; s_ind++) {
@@ -212,7 +200,7 @@ public:
                   std::to_string(c_ind) + "_" + this->world->children[c_ind]->scorers[s_ind]->name_;
                 dim           = this->world->children[c_ind]->geo->get_nxyz();
                 vol_size      = dim.x * dim.y * dim.z;
-                std::vector<double> reshaped_data = this->reshape_data(c_ind, s_ind, dim);
+                reshaped_data = this->reshape_data(c_ind, s_ind, dim);
                 if (!this->output_format.compare("mhd")) {
                     mqi::io::save_to_mhd<R>(this->world->children[c_ind],
                                             reshaped_data.data(),
@@ -231,7 +219,6 @@ public:
                     mqi::io::save_to_bin<double>(
                       reshaped_data.data(), 1.0, this->output_path, filename, vol_size);
                 }
-                // No manual delete needed - vector handles memory automatically
             }
         }
         //auto                                      stop = std::chrono::high_resolution_clock::now();
