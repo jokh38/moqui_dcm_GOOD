@@ -1779,15 +1779,10 @@ public:
     }
 
     CUDA_HOST
-    double*
+    std::vector<double>
     reshape_data(int c_ind, int s_ind, mqi::vec3<ijk_t> dim) {
-        //        R* reshaped_data = new R[dim.x * dim.y * dim.z];
-        double* reshaped_data = new double[dim.x * dim.y * dim.z];
-        //        std::memset(reshaped_data, 0, sizeof(R) * dim.x * dim.y * dim.z);
-        int ind_x = 0, ind_y = 0, ind_z = 0, lin = 0;
-        for (int i = 0; i < dim.x * dim.y * dim.z; i++) {
-            reshaped_data[i] = 0;
-        }
+        // Use vector for automatic memory management
+        std::vector<double> reshaped_data(dim.x * dim.y * dim.z, 0.0);
         //printf("max capacity %d\n", this->world->children[c_ind]->scorers[s_ind]->max_capacity_);
         for (int ind = 0; ind < this->world->children[c_ind]->scorers[s_ind]->max_capacity_;
              ind++) {
@@ -1805,7 +1800,6 @@ public:
     save_reshaped_files() {
         uint32_t                 vol_size;
         mqi::vec3<ijk_t>         dim;
-        double*                  reshaped_data;
         std::string              filename;
         std::vector<std::string> beam_names = this->tx->get_beam_names();
         std::string              beam_name  = beam_names[bnb - 1];
@@ -1815,17 +1809,17 @@ public:
                            this->world->children[c_ind]->scorers[s_ind]->name_;
                 dim           = this->world->children[c_ind]->geo->get_nxyz();
                 vol_size      = dim.x * dim.y * dim.z;
-                reshaped_data = this->reshape_data(c_ind, s_ind, dim);
+                std::vector<double> reshaped_data = this->reshape_data(c_ind, s_ind, dim);
                 if (!this->output_format.compare("mhd")) {
                     mqi::io::save_to_mhd<R>(this->world->children[c_ind],
-                                            reshaped_data,
+                                            reshaped_data.data(),
                                             this->particles_per_history,
                                             this->output_path,
                                             filename,
                                             vol_size);
                 } else if (!this->output_format.compare("mha")) {
                     mqi::io::save_to_mha<R>(this->world->children[c_ind],
-                                            reshaped_data,
+                                            reshaped_data.data(),
                                             this->particles_per_history,
                                             this->output_path,
                                             filename,
@@ -1864,14 +1858,13 @@ public:
                         this->twoCentimeterMode
                     );
                 } else {
-                    mqi::io::save_to_bin<double>(reshaped_data,
+                    mqi::io::save_to_bin<double>(reshaped_data.data(),
                                                  this->particles_per_history,
                                                  this->output_path,
                                                  filename,
                                                  vol_size);
                 }
-
-                delete[] reshaped_data;
+                // No manual delete needed - vector handles memory automatically
             }
         }
     }
